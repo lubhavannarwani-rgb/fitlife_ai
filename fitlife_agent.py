@@ -1,3 +1,4 @@
+import os
 import sqlite3
 import textwrap
 
@@ -11,11 +12,15 @@ from langchain_groq import ChatGroq
 
 from fitness_calculator import generate_fitness_report
 from meal_planner import generate_meal_plan
-from Rag import get_knowledge_base
+from rag import get_knowledge_base
 from workout_generator import generate_workout
 
 
-MEMORY_DB_FILE = "fitlife_memory.db"
+# Optional settings (set them in Render > Environment if needed):
+#   MEMORY_BACKEND=memory                    skip SQLite completely
+#   MEMORY_DB_FILE=/tmp/fitlife_memory.db    use a path that is always writable
+MEMORY_DB_FILE = os.getenv("MEMORY_DB_FILE", "fitlife_memory.db")
+MEMORY_BACKEND = os.getenv("MEMORY_BACKEND", "sqlite").lower()
 
 
 # =========================================
@@ -29,10 +34,11 @@ def get_checkpointer():
     """
     Memory store for conversations.
 
-    Uses SQLite so the conversation is remembered even after the
-    program is closed (needs: pip install langgraph-checkpoint-sqlite).
-    If that package is missing, falls back to in-memory storage,
-    which is forgotten when the program ends.
+    Uses SQLite so the conversation survives a restart (needs:
+    pip install langgraph-checkpoint-sqlite). If SQLite cannot be used
+    (package missing, file not writable on the server), it falls back
+    to in-memory storage so the chat still works. In-memory storage is
+    forgotten when the program restarts.
     """
 
     global _checkpointer
@@ -40,25 +46,36 @@ def get_checkpointer():
     if _checkpointer is not None:
         return _checkpointer
 
-    try:
-        from langgraph.checkpoint.sqlite import SqliteSaver
+    if MEMORY_BACKEND != "memory":
 
-        connection = sqlite3.connect(
-            MEMORY_DB_FILE,
-            check_same_thread=False
-        )
+        try:
+            from langgraph.checkpoint.sqlite import SqliteSaver
 
-        _checkpointer = SqliteSaver(connection)
+            connection = sqlite3.connect(
+                MEMORY_DB_FILE,
+                check_same_thread=False
+            )
 
-    except ImportError:
-        from langgraph.checkpoint.memory import InMemorySaver
+            # Prove the file is writable now, not on the first chat
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS _probe (x INTEGER)"
+            )
+            connection.commit()
 
-        print(
-            "Note: langgraph-checkpoint-sqlite is not installed, so "
-            "memory will be lost when the program closes."
-        )
+            _checkpointer = SqliteSaver(connection)
 
-        _checkpointer = InMemorySaver()
+            return _checkpointer
+
+        except Exception as error:
+            print(
+                "Note: SQLite memory is unavailable "
+                f"({type(error).__name__}: {error}). "
+                "Using in-memory storage instead."
+            )
+
+    from langgraph.checkpoint.memory import InMemorySaver
+
+    _checkpointer = InMemorySaver()
 
     return _checkpointer
 
