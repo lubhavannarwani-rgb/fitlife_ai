@@ -1,0 +1,14 @@
+langchain-core
+langchain-community
+langchain-google-genai
+pydantic
+python-dotenv
+langchain
+langchain-groq
+langgraph
+langgraph-checkpoint-sqlite
+
+
+fastapi
+uvicorn[standard]
+pydantic>=2

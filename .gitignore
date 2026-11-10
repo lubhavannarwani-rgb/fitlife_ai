@@ -1,0 +1,7 @@
+.env
+fitlife_memory.db
+__pycache__/
+*.pyc
+venv/
+.venv/
+.vscode/

@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FitLife AI - Personal Fitness Plan</title>
+<style>
+  :root {
+    --bg: #f5f7f6;
+    --card: #ffffff;
+    --text: #1d2a27;
+    --muted: #5d6f6a;
+    --border: #dce5e2;
+    --accent: #0f8b6d;
+    --accent-dark: #0b6b54;
+    --accent-soft: #e2f4ee;
+    --good: #1f9d55;
+    --good-soft: #e1f5e9;
+    --warn: #c27a00;
+    --warn-soft: #fff1d6;
+    --bad: #c0392b;
+    --bad-soft: #fde4e1;
+    --info-soft: #e6eefb;
+    --info: #2c5fb3;
+    --protein: #3b82c4;
+    --carbs: #e0a020;
+    --fat: #d4624a;
+    --shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #11191a;
+      --card: #1a2526;
+      --text: #e6efec;
+      --muted: #9fb2ad;
+      --border: #2b3a3b;
+      --accent: #2fc59b;
+      --accent-dark: #1ea67f;
+      --accent-soft: #17332c;
+      --good: #4cc98a;
+      --good-soft: #163325;
+      --warn: #f0b34a;
+      --warn-soft: #3a2f14;
+      --bad: #ef7b6d;
+      --bad-soft: #3b1f1c;
+      --info-soft: #1b2a45;
+      --info: #7fa9ec;
+      --shadow: none;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px 48px; }
+
+  header.top {
+    background: var(--accent);
+    color: #fff;
+    padding: 22px 16px;
+  }
+  header.top .wrap { padding-bottom: 0; }
+  header.top h1 { margin: 0; font-size: 1.6rem; }
+  header.top p { margin: 4px 0 0; opacity: .92; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-top: 18px;
+    box-shadow: var(--shadow);
+  }
+  .card h2 { margin: 0 0 14px; font-size: 1.15rem; }
+  .card h3 { margin: 0 0 8px; font-size: 1rem; }
+
+  /* form */
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+  label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 4px; }
+  .hint { font-weight: 400; color: var(--muted); }
+  input[type=text], input[type=number], select {
+    width: 100%;
+    padding: 10px 11px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: .95rem;
+  }
+  input:focus, select:focus, button:focus-visible, textarea:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .checks { display: flex; gap: 14px; flex-wrap: wrap; padding-top: 6px; }
+  .checks label { font-weight: 500; display: flex; gap: 6px; align-items: center; margin: 0; }
+
+  button {
+    font: inherit;
+    cursor: pointer;
+    border-radius: 9px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    padding: 10px 18px;
+    font-weight: 600;
+  }
+  button:hover { background: var(--accent-dark); }
+  button.secondary { background: transparent; color: var(--accent); }
+  button.secondary:hover { background: var(--accent-soft); }
+  button:disabled { opacity: .6; cursor: wait; }
+  .actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .error {
+    display: none;
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--bad-soft);
+    color: var(--bad);
+    border: 1px solid var(--bad);
+  }
+  .error.show { display: block; }
+
+  /* tabs */
+  #results { display: none; }
+  #results.show { display: block; }
+  .tabs {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-top: 18px;
+    border-bottom: 2px solid var(--border);
+  }
+  .tab {
+    background: transparent; color: var(--muted);
+    border: none; border-bottom: 3px solid transparent;
+    border-radius: 0; padding: 10px 16px; margin-bottom: -2px;
+  }
+  .tab:hover { background: transparent; color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* stats */
+  .stats { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+  .stat { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+  .stat .label { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .stat .value { font-size: 1.7rem; font-weight: 700; }
+  .stat .unit { font-size: .85rem; color: var(--muted); font-weight: 400; }
+
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .78rem; font-weight: 600; }
+  .badge.good { background: var(--good-soft); color: var(--good); }
+  .badge.warn { background: var(--warn-soft); color: var(--warn); }
+  .badge.bad { background: var(--bad-soft); color: var(--bad); }
+
+  /* macro bars */
+  .macro { margin: 12px 0; }
+  .macro .row { display: flex; justify-content: space-between; font-size: .92rem; margin-bottom: 4px; }
+  .bar { height: 10px; background: var(--border); border-radius: 999px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; border-radius: 999px; }
+  .bar .protein { background: var(--protein); }
+  .bar .carbs { background: var(--carbs); }
+  .bar .fat { background: var(--fat); }
+  .bar .good { background: var(--good); }
+  .bar .warn { background: var(--warn); }
+  .bar .bad { background: var(--bad); }
+
+  /* insights */
+  .insights { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .insights li { padding: 10px 12px; border-radius: 10px; font-size: .92rem; border-left: 4px solid; }
+  .insights .ok { background: var(--good-soft); border-color: var(--good); }
+  .insights .info { background: var(--info-soft); border-color: var(--info); }
+  .insights .warning { background: var(--warn-soft); border-color: var(--warn); }
+
+  /* tables */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  th { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  .match { min-width: 140px; }
+  .match .bar { margin-bottom: 3px; }
+
+  /* meals + workout */
+  .cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .meal { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+  .meal .meal-type { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--accent); font-weight: 700; }
+  .meal h3 { margin: 2px 0 8px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .chip { background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; font-size: .8rem; }
+  .chip b { font-weight: 700; }
+  .section-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .section-head h2 { margin: 0; }
+  ul.plain { margin: 0; padding-left: 20px; }
+  .two { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .box { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+  .note { font-size: .85rem; color: var(--muted); margin-top: 14px; }
+
+  /* chat */
+  .chat-log { height: 380px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: var(--bg); display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: 88%; padding: 10px 13px; border-radius: 12px; font-size: .94rem; overflow-wrap: anywhere; }
+  .msg.user { align-self: flex-end; background: var(--accent); color: #fff; }
+  .msg.ai { align-self: flex-start; background: var(--card); border: 1px solid var(--border); }
+  .msg p { margin: 0 0 8px; }
+  .msg p:last-child { margin-bottom: 0; }
+  .msg table { font-size: .82rem; margin: 6px 0; display: block; overflow-x: auto; }
+  .msg h4, .msg h5 { margin: 8px 0 4px; }
+  .msg ul, .msg ol { margin: 4px 0 8px; padding-left: 20px; }
+  .msg code { background: var(--bg); padding: 1px 5px; border-radius: 5px; }
+  .chat-form { display: flex; gap: 8px; margin-top: 10px; }
+  .chat-form input { flex: 1; }
+  .suggest { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .suggest button { font-size: .82rem; padding: 5px 12px; font-weight: 500; }
+  .typing { color: var(--muted); font-style: italic; }
+
+  footer { text-align: center; color: var(--muted); font-size: .82rem; margin-top: 26px; }
+
+  @media print {
+    header.top, .tabs, #formCard, .actions, .chat-form, .suggest, #panel-chat, footer, .no-print { display: none !important; }
+    .panel { display: block !important; }
+    body { background: #fff; color: #000; }
+    .card { box-shadow: none; break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <h1>FitLife AI</h1>
+    <p>A personal fitness report, meal plan and workout, built from your profile.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ PROFILE FORM ============ -->
+  <section class="card" id="formCard">
+    <h2>Your profile</h2>
+    <form id="profileForm" autocomplete="off">
+      <div class="grid">
+        <div><label for="name">Name</label><input type="text" id="name" name="name" minlength="2" maxlength="50" required></div>
+        <div><label for="age">Age</label><input type="number" id="age" name="age" min="18" max="100" required></div>
+        <div><label for="height_cm">Height <span class="hint">(cm)</span></label><input type="number" id="height_cm" name="height_cm" min="101" max="230" step="0.1" required></div>
+        <div><label for="weight_kg">Weight <span class="hint">(kg)</span></label><input type="number" id="weight_kg" name="weight_kg" min="31" max="300" step="0.1" required></div>
+
+        <div>
+          <label for="sex">Sex</label>
+          <select id="sex" name="sex">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+        <div>
+          <label for="fitness_goal">Fitness goal</label>
+          <select id="fitness_goal" name="fitness_goal">
+            <option value="weight_loss">Weight loss</option>
+            <option value="muscle_gain">Muscle gain</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="general_fitness">General fitness</option>
+          </select>
+        </div>
+        <div>
+          <label for="diet_type">Diet type</label>
+          <select id="diet_type" name="diet_type">
+            <option value="vegetarian">Vegetarian</option>
+            <option value="vegan">Vegan</option>
+            <option value="eggetarian">Eggetarian</option>
+            <option value="non_vegetarian">Non-vegetarian</option>
+          </select>
+        </div>
+        <div>
+          <label for="activity_level">Activity level</label>
+          <select id="activity_level" name="activity_level">
+            <option value="sedentary">Sedentary (desk job, little exercise)</option>
+            <option value="light">Light (1-3 days a week)</option>
+            <option value="moderate" selected>Moderate (3-5 days a week)</option>
+            <option value="active">Active (6-7 days a week)</option>
+            <option value="very_active">Very active (hard physical work + training)</option>
+          </select>
+        </div>
+        <div>
+          <label for="experience_level">Workout experience</label>
+          <select id="experience_level" name="experience_level">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+        <div><label for="workout_minutes">Workout time <span class="hint">(minutes)</span></label><input type="number" id="workout_minutes" name="workout_minutes" min="5" max="180" value="45" required></div>
+
+        <div>
+          <label>Equipment <span class="hint">(leave empty for none)</span></label>
+          <div class="checks">
+            <label><input type="checkbox" name="equip" value="dumbbells"> Dumbbells</label>
+            <label><input type="checkbox" name="equip" value="resistance band"> Resistance band</label>
+          </div>
+        </div>
+        <div><label for="equipOther">Other equipment <span class="hint">(comma separated)</span></label><input type="text" id="equipOther" name="equipOther"></div>
+        <div><label for="allergies">Allergies <span class="hint">(e.g. dairy, peanuts, gluten)</span></label><input type="text" id="allergies" name="allergies"></div>
+        <div><label for="limitations">Injuries / limitations <span class="hint">(e.g. knee, lower back)</span></label><input type="text" id="limitations" name="limitations"></div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" id="generateBtn">Generate my plan</button>
+      </div>
+      <div class="error" id="formError" role="alert"></div>
+    </form>
+  </section>
+
+  <!-- ============ RESULTS ============ -->
+  <div id="results">
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="overview" role="tab">Overview</button>
+      <button class="tab" data-tab="meals" role="tab">Meal plan</button>
+      <button class="tab" data-tab="workout" role="tab">Workout</button>
+      <button class="tab" data-tab="chat" role="tab">Ask FitLife AI</button>
+    </div>
+
+    <div class="error" id="resultError" role="alert"></div>
+
+    <div class="panel active" id="panel-overview"></div>
+    <div class="panel" id="panel-meals"></div>
+    <div class="panel" id="panel-workout"></div>
+
+    <div class="panel" id="panel-chat">
+      <section class="card">
+        <h2>Ask FitLife AI</h2>
+        <div id="chatDisabled" class="note" style="display:none">
+          AI chat is not available on this server (no API key set). The plan above works without it.
+        </div>
+        <div id="chatArea">
+          <div class="chat-log" id="chatLog" aria-live="polite">
+            <div class="msg ai">Hi! Ask me about your plan, for example to change a meal, or about nutrition and training.</div>
+          </div>
+          <div class="suggest" id="suggest">
+            <button type="button" class="secondary">Give me a different dinner</button>
+            <button type="button" class="secondary">How much protein do I need?</button>
+            <button type="button" class="secondary">How long should I rest between sets?</button>
+            <button type="button" class="secondary">Is my fibre too high?</button>
+          </div>
+          <form class="chat-form" id="chatForm" autocomplete="off">
+            <input type="text" id="chatInput" maxlength="1000" placeholder="Type your question..." aria-label="Your question">
+            <button type="submit" id="chatSend">Send</button>
+          </form>
+        </div>
+      </section>
+    </div>
+
+    <div class="actions no-print" style="margin-top:18px">
+      <button type="button" class="secondary" id="printBtn">Print plan</button>
+      <button type="button" class="secondary" id="downloadBtn">Download as JSON</button>
+      <button type="button" class="secondary" id="editBtn">Edit profile</button>
+    </div>
+  </div>
+
+  <footer>
+    FitLife AI gives general fitness and nutrition guidance. It is not medical advice.
+    Allergy filtering cannot guarantee safety, so always check food labels.
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ---------- small helpers ---------- */
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+
+  const esc = (value) => String(value)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+  const pretty = (text) => String(text).replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+  const fmt = (value, digits = 0) => Number(value).toLocaleString(undefined, { maximumFractionDigits: digits });
+
+  const MEAL_ORDER = ["breakfast", "morning_snack", "lunch", "evening_snack", "dinner"];
+  const GOAL_LABELS = {
+    weight_loss: "Weight loss", muscle_gain: "Muscle gain",
+    maintenance: "Maintenance", general_fitness: "General fitness"
+  };
+
+  const state = { plan: null, profile: null, threadId: null };
+
+  /* ---------- storage (may be unavailable) ---------- */
+  const store = {
+    get(key) { try { return localStorage.getItem(key); } catch (e) { return null; } },
+    set(key, value) { try { localStorage.setItem(key, value); } catch (e) { /* ignore */ } }
+  };
+
+  function newThreadId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+  }
+
+  /* ---------- API ---------- */
+  function errorText(data, status) {
+    if (data && typeof data.detail === "string") return data.detail;
+    if (data && Array.isArray(data.detail)) {
+      return data.detail.map((item) => {
+        const field = (item.loc || []).filter((part) => part !== "body" && part !== "profile").join(" ");
+        return field ? field + ": " + item.msg : item.msg;
+      }).join("; ");
+    }
+    return "Request failed (" + status + ").";
+  }
+
+  async function api(path, body) {
+    let response;
+    try {
+      response = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+    } catch (error) {
+      throw new Error("Could not reach the server. Check your connection and try again.");
+    }
+    let data = null;
+    try { data = await response.json(); } catch (error) { /* not json */ }
+    if (!response.ok) throw new Error(errorText(data, response.status));
+    return data;
+  }
+
+  function showError(element, message) {
+    element.textContent = message;
+    element.classList.add("show");
+  }
+  function clearError(element) {
+    element.textContent = "";
+    element.classList.remove("show");
+  }
+
+  /* ---------- tiny markdown renderer for chat replies ---------- */
+  function inline(text) {
+    return text
+      .replace(/&lt;br\s*\/?&gt;/g, "<br>")
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/`(.+?)`/g, "<code>$1</code>");
+  }
+
+  function md(source) {
+    const lines = esc(source).split("\n");
+    let html = "";
+    let list = null;
+    let i = 0;
+
+    const closeList = () => { if (list) { html += "</" + list + ">"; list = null; } };
+    const splitCells = (row) => row.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+
+    while (i < lines.length) {
+      const line = lines[i];
+
+      if (/^\s*\|/.test(line)) {
+        closeList();
+        const rows = [];
+        while (i < lines.length && /^\s*\|/.test(lines[i])) { rows.push(lines[i]); i++; }
+        const real = rows.filter((row) => !/^\s*\|[\s:\-|]+\|?\s*$/.test(row));
+        if (real.length) {
+          html += "<table><thead><tr>" +
+            splitCells(real[0]).map((c) => "<th>" + inline(c) + "</th>").join("") +
+            "</tr></thead><tbody>" +
+            real.slice(1).map((row) => "<tr>" + splitCells(row).map((c) => "<td>" + inline(c) + "</td>").join("") + "</tr>").join("") +
+            "</tbody></table>";
+        }
+        continue;
+      }
+
+      let m;
+      if ((m = line.match(/^(#{1,4})\s+(.*)/))) {
+        closeList();
+        const level = Math.min(m[1].length + 2, 5);
+        html += "<h" + level + ">" + inline(m[2]) + "</h" + level + ">";
+      } else if (/^\s*-{3,}\s*$/.test(line)) {
+        closeList();
+        html += "<hr>";
+      } else if ((m = line.match(/^\s*[-*\u2022]\s+(.*)/))) {
+        if (list !== "ul") { closeList(); html += "<ul>"; list = "ul"; }
+        html += "<li>" + inline(m[1]) + "</li>";
+      } else if ((m = line.match(/^\s*\d+[.)]\s+(.*)/))) {
+        if (list !== "ol") { closeList(); html += "<ol>"; list = "ol"; }
+        html += "<li>" + inline(m[1]) + "</li>";
+      } else if (line.trim() === "") {
+        closeList();
+      } else {
+        closeList();
+        html += "<p>" + inline(line) + "</p>";
+      }
+      i++;
+    }
+    closeList();
+    return html;
+  }
+
+  /* ---------- rendering: shared pieces ---------- */
+  function insightsHtml(list) {
+    if (!list || !list.length) return "";
+    return '<ul class="insights">' +
+      list.map((item) => '<li class="' + esc(item.level) + '">' + esc(item.message) + "</li>").join("") +
+      "</ul>";
+  }
+
+  function matchClass(key, percent) {
+    if (key === "protein_g") {
+      if (percent >= 90 && percent <= 150) return "good";
+      if (percent >= 75) return "warn";
+      return percent > 150 ? "warn" : "bad";
+    }
+    if (percent >= 90 && percent <= 110) return "good";
+    if (percent >= 75 && percent <= 130) return "warn";
+    return "bad";
+  }
+
+  function bmiClass(category) {
+    if (category === "Normal range") return "good";
+    if (category === "Obesity") return "bad";
+    return "warn";
+  }
+
+  /* ---------- rendering: overview ---------- */
+  function renderOverview(plan) {
+    const report = plan.report;
+    const macros = report.Macros;
+    const calories = report["Daily Calories"];
+
+    const macroRows = [
+      { label: "Protein", grams: macros.protein_g, kcal: macros.protein_g * 4, css: "protein" },
+      { label: "Carbs", grams: macros.carbs_g, kcal: macros.carbs_g * 4, css: "carbs" },
+      { label: "Fat", grams: macros.fat_g, kcal: macros.fat_g * 9, css: "fat" }
+    ];
+
+    const goal = GOAL_LABELS[plan.profile.fitness_goal] || pretty(plan.profile.fitness_goal);
+    const allInsights = [].concat(plan.insights.general, plan.insights.meals, plan.insights.workout);
+
+    $("#panel-overview").innerHTML =
+      '<section class="card">' +
+        "<h2>Your numbers, " + esc(plan.profile.name) + "</h2>" +
+        '<div class="stats">' +
+          '<div class="stat"><div class="label">BMI</div><div class="value">' + fmt(report.BMI, 1) + "</div>" +
+            '<span class="badge ' + bmiClass(report["BMI Category"]) + '">' + esc(report["BMI Category"]) + "</span></div>" +
+          '<div class="stat"><div class="label">BMR</div><div class="value">' + fmt(report.BMR) + ' <span class="unit">kcal/day</span></div>' +
+            '<div class="note" style="margin:0">Calories at complete rest</div></div>' +
+          '<div class="stat"><div class="label">TDEE</div><div class="value">' + fmt(report.TDEE) + ' <span class="unit">kcal/day</span></div>' +
+            '<div class="note" style="margin:0">Calories you burn per day</div></div>' +
+          '<div class="stat"><div class="label">Daily target</div><div class="value">' + fmt(calories) + ' <span class="unit">kcal</span></div>' +
+            '<div class="note" style="margin:0">Goal: ' + esc(goal) + "</div></div>" +
+        "</div>" +
+      "</section>" +
+
+      '<section class="card">' +
+        "<h2>Daily macronutrient targets</h2>" +
+        macroRows.map((row) => {
+          const share = calories ? Math.round((row.kcal / calories) * 100) : 0;
+          return '<div class="macro"><div class="row"><span><strong>' + row.label + "</strong></span>" +
+            "<span>" + fmt(row.grams, 0) + " g &middot; " + fmt(row.kcal) + " kcal &middot; " + share + "%</span></div>" +
+            '<div class="bar"><span class="' + row.css + '" style="width:' + Math.min(share, 100) + '%"></span></div></div>';
+        }).join("") +
+      "</section>" +
+
+      '<section class="card"><h2>Checks on your plan</h2>' +
+        (insightsHtml(allInsights) || '<p class="note">No issues found.</p>') +
+      "</section>";
+  }
+
+  /* ---------- rendering: meals ---------- */
+  function renderMeals(plan) {
+    const mealPlan = plan.meal_plan;
+    const totals = mealPlan.daily_totals;
+    const targets = mealPlan.targets || {};
+
+    const rows = [
+      ["calories", "Calories", "kcal"],
+      ["protein_g", "Protein", "g"],
+      ["carbs_g", "Carbs", "g"],
+      ["fat_g", "Fat", "g"]
+    ].filter((row) => targets[row[0]]).map(([key, label, unit]) => {
+      const t = targets[key];
+      const pct = t.percent_of_target || 0;
+      const css = matchClass(key, pct);
+      return "<tr><td><strong>" + label + "</strong></td>" +
+        '<td class="num">' + fmt(t.target, 0) + " " + unit + "</td>" +
+        '<td class="num">' + fmt(t.actual, 0) + " " + unit + "</td>" +
+        '<td class="match"><div class="bar"><span class="' + css + '" style="width:' + Math.min(pct, 100) + '%"></span></div>' +
+        '<span class="badge ' + css + '">' + fmt(pct, 0) + "%</span></td></tr>";
+    }).join("");
+
+    const fibreCss = totals.fibre > 45 ? "warn" : "good";
+
+    const mealCards = MEAL_ORDER.filter((type) => mealPlan.meals[type]).map((type) => {
+      const meal = mealPlan.meals[type];
+      const n = meal.nutrition;
+      return '<div class="meal"><div class="meal-type">' + esc(pretty(type)) + "</div>" +
+        "<h3>" + esc(meal.name) + "</h3>" +
+        '<div class="table-wrap"><table><thead><tr><th>Ingredient</th><th class="num">Amount</th></tr></thead><tbody>' +
+        meal.ingredients.map((item) =>
+          "<tr><td>" + esc(pretty(item.food)) + '</td><td class="num">' + fmt(item.quantity) + " " + esc(item.unit) + "</td></tr>"
+        ).join("") +
+        "</tbody></table></div>" +
+        '<div class="chips">' +
+          '<span class="chip"><b>' + fmt(n.calories) + "</b> kcal</span>" +
+          '<span class="chip">Protein <b>' + fmt(n.protein, 1) + "</b> g</span>" +
+          '<span class="chip">Carbs <b>' + fmt(n.carbs, 1) + "</b> g</span>" +
+          '<span class="chip">Fat <b>' + fmt(n.fat, 1) + "</b> g</span>" +
+          '<span class="chip">Fibre <b>' + fmt(n.fibre, 1) + "</b> g</span>" +
+        "</div></div>";
+    }).join("");
+
+    $("#panel-meals").innerHTML =
+      '<section class="card">' +
+        '<div class="section-head"><h2>Daily totals vs your targets</h2>' +
+        '<button type="button" class="secondary no-print" id="regenMeals">New meal plan</button></div>' +
+        '<div class="table-wrap"><table><thead><tr><th>Nutrient</th><th class="num">Target</th><th class="num">Your plan</th><th>Match</th></tr></thead><tbody>' +
+        rows +
+        "<tr><td><strong>Fibre</strong></td><td class=\"num\">25-38 g typical</td>" +
+        '<td class="num">' + fmt(totals.fibre, 0) + " g</td>" +
+        '<td class="match"><span class="badge ' + fibreCss + '">' + (fibreCss === "good" ? "OK" : "High") + "</span></td></tr>" +
+        "</tbody></table></div>" +
+        '<div style="margin-top:14px">' + insightsHtml(plan.insights.meals) + "</div>" +
+      "</section>" +
+      '<section class="card"><h2>Your meals</h2><div class="cards">' + mealCards + "</div>" +
+        '<p class="note">' + esc((mealPlan.warnings || []).join(" ")) + "</p>" +
+      "</section>";
+
+    $("#regenMeals").addEventListener("click", regenerateMeals);
+  }
+
+  /* ---------- rendering: workout ---------- */
+  function renderWorkout(plan) {
+    const workout = plan.workout;
+    const exercises = workout.exercises || [];
+
+    const total = workout.warmup.minutes + (workout.estimated_exercise_minutes || 0) + workout.cooldown.minutes;
+
+    const table = exercises.length
+      ? '<div class="table-wrap"><table><thead><tr><th>#</th><th>Exercise</th><th>Muscle</th><th class="num">Sets</th><th class="num">Reps / time</th><th>Rest</th><th>Equipment</th><th class="num">Time</th></tr></thead><tbody>' +
+        exercises.map((e, index) =>
+          "<tr><td>" + (index + 1) + "</td><td><strong>" + esc(e.exercise) + "</strong></td>" +
+          "<td>" + esc(pretty(e.muscle)) + '</td><td class="num">' + e.sets + '</td><td class="num">' + esc(e.reps) + "</td>" +
+          "<td>" + esc(e.rest) + "</td><td>" + esc(e.equipment.join(", ")) + '</td><td class="num">~' + e.estimated_minutes + " min</td></tr>"
+        ).join("") +
+        "</tbody></table></div>"
+      : '<p class="note">No exercises could be selected. See the checks below.</p>';
+
+    $("#panel-workout").innerHTML =
+      '<section class="card">' +
+        '<div class="section-head"><h2>Workout</h2>' +
+        '<button type="button" class="secondary no-print" id="regenWorkout">New workout</button></div>' +
+        '<div class="stats" style="margin-bottom:16px">' +
+          '<div class="stat"><div class="label">Warm-up</div><div class="value">' + workout.warmup.minutes + ' <span class="unit">min</span></div></div>' +
+          '<div class="stat"><div class="label">Exercises</div><div class="value">' + (workout.estimated_exercise_minutes || 0) + ' <span class="unit">min</span></div></div>' +
+          '<div class="stat"><div class="label">Cooldown</div><div class="value">' + workout.cooldown.minutes + ' <span class="unit">min</span></div></div>' +
+          '<div class="stat"><div class="label">Total</div><div class="value">' + total + ' <span class="unit">min</span></div></div>' +
+        "</div>" +
+        '<div class="two">' +
+          '<div class="box"><h3>Warm-up</h3><ul class="plain">' + workout.warmup.activities.map((a) => "<li>" + esc(a) + "</li>").join("") + "</ul></div>" +
+          '<div class="box"><h3>Cooldown</h3><ul class="plain">' + workout.cooldown.activities.map((a) => "<li>" + esc(a) + "</li>").join("") + "</ul></div>" +
+        "</div>" +
+      "</section>" +
+      '<section class="card"><h2>Main exercises</h2>' + table +
+        '<div style="margin-top:14px">' + insightsHtml(plan.insights.workout) + "</div>" +
+        '<p class="note">Stop any exercise that causes sharp pain. Talk to a doctor or physiotherapist if you have an injury or health condition.</p>' +
+      "</section>";
+
+    $("#regenWorkout").addEventListener("click", regenerateWorkout);
+  }
+
+  function renderAll() {
+    renderOverview(state.plan);
+    renderMeals(state.plan);
+    renderWorkout(state.plan);
+  }
+
+  /* ---------- form ---------- */
+  function splitList(text) {
+    return String(text).split(",").map((s) => s.trim()).filter(Boolean);
+  }
+
+  function readProfile() {
+    const form = $("#profileForm");
+    const get = (name) => form.elements[name].value;
+    const equipment = $$('input[name="equip"]:checked', form).map((box) => box.value);
+
+    return {
+      name: get("name").trim(),
+      age: Number(get("age")),
+      height_cm: Number(get("height_cm")),
+      weight_kg: Number(get("weight_kg")),
+      sex: get("sex"),
+      fitness_goal: get("fitness_goal"),
+      diet_type: get("diet_type"),
+      activity_level: get("activity_level"),
+      experience_level: get("experience_level"),
+      workout_minutes: Number(get("workout_minutes")),
+      equipment: equipment.concat(splitList(get("equipOther"))),
+      allergies: splitList(get("allergies")),
+      limitations: splitList(get("limitations"))
+    };
+  }
+
+  function fillForm(profile) {
+    const form = $("#profileForm");
+    ["name", "age", "height_cm", "weight_kg", "sex", "fitness_goal", "diet_type",
+     "activity_level", "experience_level", "workout_minutes"].forEach((key) => {
+      if (profile[key] !== undefined && form.elements[key]) form.elements[key].value = profile[key];
+    });
+    const known = ["dumbbells", "resistance band"];
+    $$('input[name="equip"]', form).forEach((box) => { box.checked = (profile.equipment || []).includes(box.value); });
+    form.elements.equipOther.value = (profile.equipment || []).filter((item) => !known.includes(item)).join(", ");
+    form.elements.allergies.value = (profile.allergies || []).join(", ");
+    form.elements.limitations.value = (profile.limitations || []).join(", ");
+  }
+
+  /* ---------- actions ---------- */
+  function showTab(name) {
+    $$(".tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.tab === name));
+    $$(".panel").forEach((panel) => panel.classList.toggle("active", panel.id === "panel-" + name));
+  }
+
+  async function generatePlan(event) {
+    event.preventDefault();
+    const button = $("#generateBtn");
+    clearError($("#formError"));
+    clearError($("#resultError"));
+
+    const profile = readProfile();
+    button.disabled = true;
+    button.textContent = "Generating...";
+
+    try {
+      const plan = await api("/api/plan", profile);
+      state.plan = plan;
+      state.profile = profile;
+      store.set("fitlife_profile", JSON.stringify(profile));
+
+      renderAll();
+      $("#results").classList.add("show");
+      $("#chatDisabled").style.display = plan.chat_enabled ? "none" : "block";
+      $("#chatArea").style.display = plan.chat_enabled ? "block" : "none";
+      showTab("overview");
+      $("#results").scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (error) {
+      showError($("#formError"), error.message);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Generate my plan";
+    }
+  }
+
+  async function regenerateMeals(event) {
+    const button = event.currentTarget;
+    button.disabled = true;
+    button.textContent = "Working...";
+    clearError($("#resultError"));
+    try {
+      const data = await api("/api/meal-plan", state.profile);
+      state.plan.meal_plan = data.meal_plan;
+      state.plan.insights.meals = data.insights;
+      renderOverview(state.plan);
+      renderMeals(state.plan);
+    } catch (error) {
+      showError($("#resultError"), error.message);
+      button.disabled = false;
+      button.textContent = "New meal plan";
+    }
+  }
+
+  async function regenerateWorkout(event) {
+    const button = event.currentTarget;
+    button.disabled = true;
+    button.textContent = "Working...";
+    clearError($("#resultError"));
+    try {
+      const data = await api("/api/workout", state.profile);
+      state.plan.workout = data.workout;
+      state.plan.insights.workout = data.insights;
+      renderOverview(state.plan);
+      renderWorkout(state.plan);
+    } catch (error) {
+      showError($("#resultError"), error.message);
+      button.disabled = false;
+      button.textContent = "New workout";
+    }
+  }
+
+  /* ---------- chat ---------- */
+  function addMessage(kind, content, isHtml) {
+    const log = $("#chatLog");
+    const bubble = document.createElement("div");
+    bubble.className = "msg " + kind;
+    if (isHtml) bubble.innerHTML = content; else bubble.textContent = content;
+    log.appendChild(bubble);
+    log.scrollTop = log.scrollHeight;
+    return bubble;
+  }
+
+  function planForChat() {
+    // Compact copy of what is on screen, so the AI talks about the same plan.
+    return {
+      report: state.plan.report,
+      meal_plan: {
+        meals: state.plan.meal_plan.meals,
+        daily_totals: state.plan.meal_plan.daily_totals,
+        targets: state.plan.meal_plan.targets
+      },
+      workout: state.plan.workout
+    };
+  }
+
+  async function sendChat(text) {
+    const message = text.trim();
+    if (!message || !state.plan) return;
+
+    const input = $("#chatInput");
+    const send = $("#chatSend");
+    input.value = "";
+    addMessage("user", message, false);
+    const waiting = addMessage("ai typing", "Thinking...", false);
+    send.disabled = true;
+
+    try {
+      const data = await api("/api/chat", {
+        profile: state.profile,
+        message: message,
+        thread_id: state.threadId,
+        plan: planForChat()
+      });
+      waiting.className = "msg ai";
+      waiting.innerHTML = md(data.reply);
+    } catch (error) {
+      waiting.className = "msg ai";
+      waiting.textContent = "Sorry, " + error.message;
+    } finally {
+      send.disabled = false;
+      $("#chatLog").scrollTop = $("#chatLog").scrollHeight;
+      input.focus();
+    }
+  }
+
+  /* ---------- wire up ---------- */
+  function init() {
+    state.threadId = store.get("fitlife_thread") || newThreadId();
+    store.set("fitlife_thread", state.threadId);
+
+    const saved = store.get("fitlife_profile");
+    if (saved) {
+      try { fillForm(JSON.parse(saved)); } catch (error) { /* ignore bad data */ }
+    }
+
+    $("#profileForm").addEventListener("submit", generatePlan);
+
+    $$(".tab").forEach((tab) => tab.addEventListener("click", () => showTab(tab.dataset.tab)));
+
+    $("#chatForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      sendChat($("#chatInput").value);
+    });
+
+    $$("#suggest button").forEach((button) =>
+      button.addEventListener("click", () => sendChat(button.textContent))
+    );
+
+    $("#printBtn").addEventListener("click", () => window.print());
+
+    $("#editBtn").addEventListener("click", () => {
+      $("#formCard").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    $("#downloadBtn").addEventListener("click", () => {
+      if (!state.plan) return;
+      const blob = new Blob([JSON.stringify(state.plan, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "fitlife-plan.json";
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+  }
+
+  if (typeof window !== "undefined" && window.__FITLIFE_TEST__) {
+    window.__FITLIFE_TEST__.exports = { md, renderOverview, renderMeals, renderWorkout, insightsHtml, errorText };
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>
